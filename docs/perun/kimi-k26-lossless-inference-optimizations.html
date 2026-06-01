@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perun: Lossless Kimi K2.6 Inference Optimization Map</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18212f;
+      --muted: #5e6978;
+      --line: #d9dee7;
+      --panel: #f7f9fc;
+      --accent: #0f766e;
+      --accent-2: #8a4b0f;
+      --risk: #b42318;
+      --ok: #067647;
+      --blue: #175cd3;
+      --bg: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 28px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: 38px;
+      line-height: 1.12;
+      margin: 0 0 12px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 24px;
+      line-height: 1.25;
+      margin: 34px 0 14px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin: 0 0 8px;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 12px; }
+    a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    code { background: #eef2f7; border: 1px solid #dce3ed; border-radius: 4px; padding: 1px 5px; }
+
+    .lede {
+      max-width: 880px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: var(--muted);
+      background: #fff;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 16px;
+      min-height: 100%;
+    }
+
+    .card strong { color: var(--ink); }
+
+    .tagrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0 10px;
+    }
+
+    .tag {
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: var(--panel);
+    }
+
+    .tag.high { border-color: #a7f3d0; color: var(--ok); background: #ecfdf3; }
+    .tag.medium { border-color: #fedf89; color: var(--accent-2); background: #fffaeb; }
+    .tag.risk { border-color: #fecdca; color: var(--risk); background: #fff1f3; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 14px 0 24px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 650;
+    }
+
+    .section {
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+      margin-top: 28px;
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: #f0fdfa;
+      padding: 14px 16px;
+      margin: 16px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .warn {
+      border-left-color: var(--risk);
+      background: #fff7f7;
+    }
+
+    ul { padding-left: 20px; margin: 8px 0 0; }
+    li { margin: 5px 0; }
+
+    .rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 30px; }
+      main { width: min(100vw - 28px, 1180px); padding-top: 32px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Lossless Inference Optimization Map for Kimi K2.6 on AMD</h1>
+    <p class="lede">
+      This note collects output-preserving techniques Perun can productionize for Kimi K2.6.
+      The emphasis is on optimizations that should preserve the target model distribution or exact greedy output, not techniques that trade quality for speed.
+    </p>
+    <div class="meta">
+      <span class="pill">Project: Perun</span>
+      <span class="pill">Model: Kimi K2.6</span>
+      <span class="pill">Hardware: AMD Instinct MI300X / MI325X / MI350X / MI355X</span>
+      <span class="pill">Date: 2026-06-01</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Executive Read</h2>
+    <div class="grid">
+      <div class="card">
+        <h3><span class="rank">1</span>Fused MoE on ROCm</h3>
+        <p>Kimi is sparse MoE, so expert routing and expert MLP execution are likely the largest decode bottleneck. AMD's Kimi K2.5 work found <code>fused_moe</code> taking 88-90% of GPU time before replacing it with a FlyDSL mixed-precision fused MoE kernel.</p>
+        <div class="tagrow"><span class="tag high">Highest AMD leverage</span><span class="tag medium">Kernel work</span><span class="tag high">Lossless if numerically equivalent</span></div>
+      </div>
+      <div class="card">
+        <h3><span class="rank">2</span>Verified Speculative Decoding</h3>
+        <p>Speculative decoding can reduce target-model forward passes while preserving the target distribution when verification is implemented correctly. Kimi-style long agent outputs make this attractive.</p>
+        <div class="tagrow"><span class="tag high">Large decode speedup</span><span class="tag risk">Needs Kimi drafter</span><span class="tag high">Distribution-preserving</span></div>
+      </div>
+      <div class="card">
+        <h3><span class="rank">3</span>Prefix and KV Reuse</h3>
+        <p>Agentic workloads repeat system prompts, tool schemas, repository context, retrieved chunks, and conversation prefixes. Exact KV reuse reduces prefill cost without changing generation.</p>
+        <div class="tagrow"><span class="tag high">High TTFT impact</span><span class="tag medium">Serving-layer work</span><span class="tag high">Exact</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Kimi K2.6 Constraints That Matter</h2>
+    <p>
+      Kimi K2.6 is a 1T-parameter sparse MoE model with 32B active parameters, MLA attention, 64 attention heads, native multimodality, and a 256K context window. Current SGLang guidance says AMD deployments use TP=4 because AITER's MLA kernel requires <code>heads_per_gpu % 16 == 0</code>; with 64 heads, TP=4 gives 16 heads per GPU.
+      The same guidance recommends AMD ROCm images for MI300X/MI325X and MI350X/MI355X and notes that FP8 KV cache is a memory tradeoff rather than a strict lossless default.
+      Source: <a href="https://docs.sglang.io/cookbook/autoregressive/Moonshotai/Kimi-K2.6">SGLang Kimi K2.6 guide</a>.
+    </p>
+    <div class="callout warn">
+      For this document, “lossless” means preserving the target model's sampling distribution or exact greedy output. Kernel substitutions can still introduce tiny floating-point differences; they need golden-output and distribution tests before we call them production-safe.
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Technique Matrix</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Technique</th>
+          <th>Why It Helps Kimi K2.6</th>
+          <th>Lossless Status</th>
+          <th>AMD Production Path</th>
+          <th>Expected Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ROCm fused MoE kernels</td>
+          <td>Kimi activates 8 routed experts plus shared expert per token; MoE compute and routing dominate decode.</td>
+          <td>Lossless if routing, accumulation order tolerances, and output numerics match accepted baselines.</td>
+          <td>Port or specialize FlyDSL/AITER fused MoE for Kimi K2.6 shapes; add shape registry and correctness harness.</td>
+          <td>Very high</td>
+        </tr>
+        <tr>
+          <td>AITER MLA decode/prefill kernels</td>
+          <td>MLA reduces KV footprint, but decode attention still needs an AMD-native fast path.</td>
+          <td>Numerically equivalent kernel optimization.</td>
+          <td>Enforce TP=4 layouts, benchmark AITER MLA variants, add fallback selection per shape.</td>
+          <td>High</td>
+        </tr>
+        <tr>
+          <td>Verified speculative decoding</td>
+          <td>Turns multiple output tokens into fewer target passes, especially useful for long coding and agent traces.</td>
+          <td>Lossless with target-model verification.</td>
+          <td>Start with n-gram/prompt lookup, then Kimi-specific EAGLE-style drafter or small draft model.</td>
+          <td>High to very high</td>
+        </tr>
+        <tr>
+          <td>Dynamic draft trees</td>
+          <td>Static speculative trees waste verifier work when acceptance varies by context.</td>
+          <td>Lossless if verification is unchanged.</td>
+          <td>Implement tree verifier kernels that pack accepted/rejected branches efficiently on ROCm.</td>
+          <td>High</td>
+        </tr>
+        <tr>
+          <td>Prefix caching and chunk KV reuse</td>
+          <td>Agent workloads reuse prompts, tools, files, retrieved chunks, and prior conversation prefixes.</td>
+          <td>Exact when cache keys include tokenizer, template, model revision, and sampling-independent prefix bytes.</td>
+          <td>Improve Radix/prefix cache admission and eviction for 256K contexts; add chunk-level reuse for RAG/code.</td>
+          <td>High TTFT impact</td>
+        </tr>
+        <tr>
+          <td>Chunked prefill with stall-free scheduling</td>
+          <td>Long prompts can block decode-heavy requests; chunking mixes prefill and decode work.</td>
+          <td>Exact scheduling change.</td>
+          <td>Tune chunk sizes for MI300X memory bandwidth and Kimi MLA/MoE shape balance.</td>
+          <td>Medium to high</td>
+        </tr>
+        <tr>
+          <td>Disaggregated prefill/decode</td>
+          <td>Prefill is compute-heavy; decode is memory/bandwidth and latency sensitive. Kimi long context exaggerates this split.</td>
+          <td>Exact if KV transfer is exact and request ordering semantics are preserved.</td>
+          <td>Use Mooncake/MoRI-style PD separation; optimize RDMA/KV transfer and admission control.</td>
+          <td>High at cluster scale</td>
+        </tr>
+        <tr>
+          <td>KV memory management and block sharing</td>
+          <td>256K context makes KV allocation, fragmentation, sharing, and eviction first-order performance concerns.</td>
+          <td>Exact if no KV values are dropped or approximated.</td>
+          <td>Evaluate PagedAttention-style paging versus virtual-memory-backed contiguous KV layouts on ROCm.</td>
+          <td>Medium to high</td>
+        </tr>
+        <tr>
+          <td>Topology-aware TP/EP/DP attention</td>
+          <td>MoE all-to-all, expert placement, and attention collectives can dominate multi-GPU serving.</td>
+          <td>Exact parallel execution change.</td>
+          <td>Pin Kimi TP=4 baseline, then test expert parallel and DP attention layouts on MI300X/MI325X nodes.</td>
+          <td>High</td>
+        </tr>
+        <tr>
+          <td>CUDA-graph equivalent capture on ROCm</td>
+          <td>Decode has many small repeated launches; graph capture can reduce CPU launch overhead.</td>
+          <td>Exact execution capture.</td>
+          <td>Capture stable decode micrographs per batch shape; fall back for dynamic speculative branches.</td>
+          <td>Medium</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>Research and Productionization Notes</h2>
+
+    <div class="card">
+      <h3>1. Speculative Decoding Families</h3>
+      <p>
+        The foundation is target-verified speculative decoding: a small proposer drafts tokens and the full Kimi model verifies them in parallel. The verifier preserves the target distribution when implemented correctly. Relevant systems and papers include
+        <a href="https://arxiv.org/abs/2305.09781">SpecInfer</a>,
+        <a href="https://arxiv.org/abs/2401.15077">EAGLE</a>,
+        <a href="https://arxiv.org/abs/2406.16858">EAGLE-2</a>,
+        <a href="https://huggingface.co/papers/2503.01840">EAGLE-3</a>,
+        <a href="https://arxiv.org/abs/2502.05202">heterogeneous-vocabulary lossless speculative decoding</a>, and
+        <a href="https://arxiv.org/abs/2502.17421">LongSpec</a> for long-context settings.
+      </p>
+      <ul>
+        <li><strong>Perun angle:</strong> implement a common proposer/verifier interface first, then plug in n-gram, prompt-lookup, small draft model, and EAGLE-style draft heads.</li>
+        <li><strong>AMD issue:</strong> verifier tree attention can become expensive if branch packing and KV access are not ROCm-native.</li>
+        <li><strong>Acceptance metric:</strong> accepted tokens per target forward pass, not just raw drafter speed.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>2. Prefix Caching and Chunk Reuse</h3>
+      <p>
+        Prefix caching skips redundant prefill by reusing exact KV states. This is especially relevant for Kimi K2.6 because long agentic prompts often share system instructions, tool schemas, repository summaries, and retrieved chunks. The 2025 MLSys paper
+        <a href="https://proceedings.mlsys.org/paper_files/paper/2025/hash/7c180af017258d239bac6248d1eb26ac-Abstract-Conference.html">Marconi</a>
+        shows that admission and eviction policy matters, reporting much higher token hit rates and lower TTFT for hybrid models.
+      </p>
+      <ul>
+        <li><strong>Perun angle:</strong> build request-prefix fingerprints that include model revision, tokenizer, chat template, tool schema, and exact token IDs.</li>
+        <li><strong>AMD issue:</strong> 256K context means cache policy must be memory-aware; bad admission can evict high-value decode KV.</li>
+        <li><strong>Production test:</strong> replay real agent traces and measure TTFT, HBM pressure, hit rate, and eviction churn.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>3. Chunked Prefill and Stall-Free Scheduling</h3>
+      <p>
+        SARATHI and Sarathi-Serve split long prefill into chunks and schedule them alongside decodes to avoid decode stalls. Sarathi-Serve reports throughput gains under latency SLOs compared with Orca and vLLM baselines. Sources:
+        <a href="https://arxiv.org/abs/2308.16369">SARATHI</a> and
+        <a href="https://arxiv.org/abs/2403.02310">Sarathi-Serve</a>.
+      </p>
+      <ul>
+        <li><strong>Perun angle:</strong> make chunk sizing adaptive to Kimi prompt length, batch mix, and current decode queue depth.</li>
+        <li><strong>AMD issue:</strong> the optimal chunk size may differ from NVIDIA because MI300X has different HBM bandwidth, xGMI topology, and ROCm kernel launch behavior.</li>
+        <li><strong>Production test:</strong> measure p50/p95/p99 TTFT and inter-token latency under mixed long-prompt and short-chat traffic.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>4. Disaggregated Prefill/Decode and KV Transport</h3>
+      <p>
+        DistServe and Mooncake separate prefill and decode onto different resources, while newer work such as FlowKV focuses on lowering KV transfer overhead. This is exact if the KV cache is transferred without approximation and scheduling semantics are preserved.
+        Sources:
+        <a href="https://arxiv.org/abs/2401.09670">DistServe</a>,
+        <a href="https://arxiv.org/abs/2407.00079">Mooncake</a>, and
+        <a href="https://arxiv.org/abs/2504.03775">FlowKV</a>.
+      </p>
+      <ul>
+        <li><strong>Perun angle:</strong> prioritize single-node correctness first, then RDMA-backed PD disaggregation for 4-8 GPU AMD nodes.</li>
+        <li><strong>AMD issue:</strong> KV transfer and collectives must be tuned for xGMI/RDMA; otherwise decode nodes idle while waiting for cache.</li>
+        <li><strong>Production test:</strong> measure goodput under SLO, KV transfer latency, GPU idle time, and memory pressure.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>5. AMD-Native MLA and MoE Kernels</h3>
+      <p>
+        AMD's ROCm optimization material describes AITER as a source of ROCm-specific fused kernels for attention, MLA, MoE, GEMM, RMSNorm, RoPE, and KV-cache paths. AMD's Kimi K2.5 blog found fused MoE to be the key bottleneck and used FlyDSL to create a mixed-precision fused MoE kernel for MI300X.
+        Sources:
+        <a href="https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/vllm-optimization.html">ROCm vLLM optimization guide</a>,
+        <a href="https://github.com/ROCm/aiter">ROCm AITER</a>, and
+        <a href="https://rocm.blogs.amd.com/artificial-intelligence/kimi-k2.5-optimize/README.html">AMD Kimi K2.5 fused MoE optimization</a>.
+      </p>
+      <ul>
+        <li><strong>Perun angle:</strong> build a kernel registry keyed by model family, GPU family, dtype, hidden size, expert count, top-k, and batch tokens.</li>
+        <li><strong>AMD issue:</strong> TP=4 is currently the safe Kimi K2.6 MLA layout; TP=8 violates the AITER head-per-GPU constraint documented by SGLang.</li>
+        <li><strong>Production test:</strong> compare logits and sampled outputs against upstream kernels across greedy and stochastic decoding seeds.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Do Not Count These as Lossless Yet</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Technique</th>
+          <th>Why It Is Risky</th>
+          <th>When to Reconsider</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Post-training quantization</td>
+          <td>Usually changes model outputs. Kimi's native INT4 release is acceptable as the baseline, but additional FP8/FP4/W4A8 changes are not automatically lossless.</td>
+          <td>Separate quality/performance track with benchmark gates.</td>
+        </tr>
+        <tr>
+          <td>KV eviction, pruning, sparsification, compression</td>
+          <td>Dropping or approximating KV changes attention inputs unless the model architecture explicitly supports it.</td>
+          <td>Only if exact reconstruction or model-native sparse attention semantics are proven.</td>
+        </tr>
+        <tr>
+          <td>Early exit</td>
+          <td>Skipping layers changes the target model unless wrapped in a verified speculative scheme.</td>
+          <td>Use only as a proposer inside verified speculative decoding.</td>
+        </tr>
+        <tr>
+          <td>Turning off thinking mode</td>
+          <td>It changes the requested generation behavior. It may be a product knob, but it is not lossless for the same request.</td>
+          <td>Expose as a workload-level latency option, not an engine optimization.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>Recommended First Experiments</h2>
+    <ol>
+      <li><strong>Profile Kimi K2.6 on AMD TP=4:</strong> collect per-kernel time for MLA decode, fused MoE, routing/top-k, RMSNorm, RoPE, collectives, sampling, and scheduler overhead.</li>
+      <li><strong>Port the Kimi K2.5 fused MoE approach:</strong> adapt FlyDSL/AITER fused MoE to K2.6 shapes and validate logits against the baseline.</li>
+      <li><strong>Add prompt-lookup speculative decoding:</strong> low-risk proposer, no training needed, strong for code and repeated agent traces.</li>
+      <li><strong>Build the verified speculation interface:</strong> proposer API, verifier API, tree packing, acceptance accounting, and deterministic replay.</li>
+      <li><strong>Improve prefix-cache policy:</strong> add trace-driven admission/eviction that optimizes saved FLOPs per HBM byte.</li>
+      <li><strong>Tune chunked prefill:</strong> sweep chunk sizes against realistic 8K, 32K, 128K, and 256K prompts.</li>
+      <li><strong>Prototype PD disaggregation only after local kernels are competitive:</strong> otherwise the cluster design will hide single-node inefficiencies.</li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <h2>Measurement Plan</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Why It Matters</th>
+          <th>Required Views</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tokens/sec per GPU</td>
+          <td>Main throughput metric for batch serving.</td>
+          <td>Prefill, decode, mixed workload, speculative accepted tokens.</td>
+        </tr>
+        <tr>
+          <td>TTFT</td>
+          <td>Prefix caching, chunked prefill, and PD disaggregation primarily affect first-token latency.</td>
+          <td>p50, p95, p99 by prompt length.</td>
+        </tr>
+        <tr>
+          <td>Inter-token latency</td>
+          <td>Decode kernel, MoE, MLA, and scheduling changes show up here.</td>
+          <td>p50, p95, p99 by batch size and output length.</td>
+        </tr>
+        <tr>
+          <td>Acceptance length</td>
+          <td>Speculative decoding wins only if accepted tokens outweigh proposer and verifier overhead.</td>
+          <td>By task type: coding, chat, tool calls, long-context continuation.</td>
+        </tr>
+        <tr>
+          <td>HBM occupancy and bandwidth</td>
+          <td>Kimi long context can bottleneck on memory, not compute.</td>
+          <td>KV cache, expert weights, activation buffers, fragmentation.</td>
+        </tr>
+        <tr>
+          <td>Correctness drift</td>
+          <td>Lossless claims need evidence.</td>
+          <td>Logit comparisons, greedy exact match, sampled distribution tests, tool-call JSON validity.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>Source Index</h2>
+    <ul>
+      <li><a href="https://docs.sglang.io/cookbook/autoregressive/Moonshotai/Kimi-K2.6">SGLang Kimi K2.6 deployment guide</a></li>
+      <li><a href="https://rocm.blogs.amd.com/artificial-intelligence/kimi-k2.5-optimize/README.html">AMD ROCm blog: accelerating Kimi K2.5 fused MoE on MI300X</a></li>
+      <li><a href="https://rocm.docs.amd.com/en/latest/how-to/rocm-for-ai/inference-optimization/vllm-optimization.html">ROCm vLLM V1 performance optimization guide</a></li>
+      <li><a href="https://github.com/ROCm/aiter">ROCm AITER repository</a></li>
+      <li><a href="https://arxiv.org/abs/2305.09781">SpecInfer: tree-based speculative inference and verification</a></li>
+      <li><a href="https://arxiv.org/abs/2401.15077">EAGLE: speculative sampling with feature uncertainty</a></li>
+      <li><a href="https://arxiv.org/abs/2406.16858">EAGLE-2: dynamic draft trees</a></li>
+      <li><a href="https://huggingface.co/papers/2503.01840">EAGLE-3: training-time test for inference acceleration</a></li>
+      <li><a href="https://arxiv.org/abs/2502.05202">Lossless speculative decoding with heterogeneous vocabularies</a></li>
+      <li><a href="https://arxiv.org/abs/2502.17421">LongSpec: long-context lossless speculative decoding</a></li>
+      <li><a href="https://proceedings.mlsys.org/paper_files/paper/2025/hash/7c180af017258d239bac6248d1eb26ac-Abstract-Conference.html">Marconi: prefix caching for hybrid LLMs</a></li>
+      <li><a href="https://arxiv.org/abs/2308.16369">SARATHI: chunked prefills</a></li>
+      <li><a href="https://arxiv.org/abs/2403.02310">Sarathi-Serve: throughput-latency scheduling</a></li>
+      <li><a href="https://arxiv.org/abs/2401.09670">DistServe: disaggregated prefill and decoding</a></li>
+      <li><a href="https://arxiv.org/abs/2407.00079">Mooncake: KVCache-centric disaggregated serving</a></li>
+      <li><a href="https://arxiv.org/abs/2504.03775">FlowKV: low-latency KV cache transfer</a></li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
